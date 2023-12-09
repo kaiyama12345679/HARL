@@ -216,19 +216,19 @@ class MujocoMulti(MultiAgentEnv):
         if self.agent_obsk is None:
             return self.env._get_obs()
         else:
-            # return build_obs(self.env,
-            #                       self.k_dicts[agent_id],
-            #                       self.k_categories,
-            #                       self.mujoco_globals,
-            #                       self.global_categories,
-            #                       vec_len=getattr(self, "obs_size", None))
-            return build_obs(
-                self.env,
-                self.k_dicts[agent_id],
-                self.k_categories,
-                self.mujoco_globals,
-                self.global_categories,
-            )
+            return build_obs(self.env,
+                                  self.k_dicts[agent_id],
+                                  self.k_categories,
+                                  self.mujoco_globals,
+                                  self.global_categories,
+                                  vec_len=getattr(self, "obs_size", None))
+            # return build_obs(
+            #     self.env,
+            #     self.k_dicts[agent_id],
+            #     self.k_categories,
+            #     self.mujoco_globals,
+            #     self.global_categories,
+            # )
 
     def get_obs_size(self):
         """Returns the shape of the observation"""
