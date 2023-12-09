@@ -206,7 +206,8 @@ class MujocoMulti(MultiAgentEnv):
             # obs_n.append(self.get_obs_agent(a))
             # obs_n.append(np.concatenate([state, self.get_obs_agent(a), agent_id_feats]))
             # obs_n.append(np.concatenate([self.get_obs_agent(a), agent_id_feats]))
-            obs_i = np.concatenate([state, agent_id_feats])
+            #obs_i = np.concatenate([state, agent_id_feats])
+            obs_i = np.concatenate([self.get_obs_agent(a), agent_id_feats])
             obs_i = (obs_i - np.mean(obs_i)) / np.std(obs_i)
             obs_n.append(obs_i)
         return obs_n
