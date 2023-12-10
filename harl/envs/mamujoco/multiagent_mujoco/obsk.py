@@ -94,6 +94,86 @@ def get_joints_at_kdist(
     return k_dict
 
 
+# def build_obs(env, k_dict, k_categories, global_dict, global_categories, vec_len=None):
+#     """Given a k_dict from get_joints_at_kdist, extract observation vector.
+
+#     :param k_dict: k_dict
+#     :param qpos: qpos numpy array
+#     :param qvel: qvel numpy array
+#     :param vec_len: if None no padding, else zero-pad to vec_len
+#     :return:
+#     observation vector
+#     """
+
+#     # TODO: This needs to be fixed, it was designed for half-cheetah only!
+#     # if add_global_pos:
+#     #    obs_qpos_lst.append(global_qpos)
+#     #    obs_qvel_lst.append(global_qvel)
+
+#     body_set_dict = {}
+#     obs_lst = []
+#     # Add parts attributes
+#     for k in sorted(list(k_dict.keys())):
+#         cats = k_categories[k]
+#         for _t in k_dict[k]:
+#             for c in cats:
+#                 if c in _t.extra_obs:
+#                     items = _t.extra_obs[c](env).tolist()
+#                     obs_lst.extend(items if isinstance(items, list) else [items])
+#                 else:
+#                     if c in [
+#                         "qvel",
+#                         "qpos",
+#                     ]:  # this is a "joint position/velocity" item
+#                         items = getattr(env.sim.data, c)[
+#                             getattr(_t, "{}_ids".format(c))
+#                         ]
+#                         obs_lst.extend(items if isinstance(items, list) else [items])
+#                     elif c in ["qfrc_actuator"]:  # this is a "vel position" item
+#                         items = getattr(env.sim.data, c)[
+#                             getattr(_t, "{}_ids".format("qvel"))
+#                         ]
+#                         obs_lst.extend(items if isinstance(items, list) else [items])
+#                     elif c in [
+#                         "cvel",
+#                         "cinert",
+#                         "cfrc_ext",
+#                     ]:  # this is a "body position" item
+#                         if _t.bodies is not None:
+#                             for b in _t.bodies:
+#                                 if c not in body_set_dict:
+#                                     body_set_dict[c] = set()
+#                                 if b not in body_set_dict[c]:
+#                                     items = getattr(env.sim.data, c)[b].tolist()
+#                                     items = getattr(_t, "body_fn", lambda _id, x: x)(
+#                                         b, items
+#                                     )
+#                                     obs_lst.extend(
+#                                         items if isinstance(items, list) else [items]
+#                                     )
+#                                     body_set_dict[c].add(b)
+
+#     # Add global attributes
+#     body_set_dict = {}
+#     for c in global_categories:
+#         if c in ["qvel", "qpos"]:  # this is a "joint position" item
+#             for j in global_dict.get("joints", []):
+#                 items = getattr(env.sim.data, c)[getattr(j, "{}_ids".format(c))]
+#                 obs_lst.extend(items if isinstance(items, list) else [items])
+#         else:
+#             for b in global_dict.get("bodies", []):
+#                 if c not in body_set_dict:
+#                     body_set_dict[c] = set()
+#                 if b not in body_set_dict[c]:
+#                     obs_lst.extend(getattr(env.sim.data, c)[b].tolist())
+#                     body_set_dict[c].add(b)
+
+#     if vec_len is not None:
+#         pad = np.array((vec_len - len(obs_lst)) * [0])
+#         if len(pad):
+#             return np.concatenate([np.array(obs_lst), pad])
+#     return np.array(obs_lst)
+
 def build_obs(env, k_dict, k_categories, global_dict, global_categories, vec_len=None):
     """Given a k_dict from get_joints_at_kdist, extract observation vector.
 
@@ -106,72 +186,98 @@ def build_obs(env, k_dict, k_categories, global_dict, global_categories, vec_len
     """
 
     # TODO: This needs to be fixed, it was designed for half-cheetah only!
-    # if add_global_pos:
+    #if add_global_pos:
     #    obs_qpos_lst.append(global_qpos)
     #    obs_qvel_lst.append(global_qvel)
+
 
     body_set_dict = {}
     obs_lst = []
     # Add parts attributes
+    # print("start=========================================================")
+    # print("k_categories: ", k_categories)
+    # print("k_dict: ", k_dict)
     for k in sorted(list(k_dict.keys())):
         cats = k_categories[k]
+        # print("cats: ", cats)
         for _t in k_dict[k]:
+            # print("_t: ", _t)
             for c in cats:
+                # print("c: ", c)
                 if c in _t.extra_obs:
                     items = _t.extra_obs[c](env).tolist()
+                    # print("extra_obs %s items: %s" % (c, items))
                     obs_lst.extend(items if isinstance(items, list) else [items])
-                else:
-                    if c in [
-                        "qvel",
-                        "qpos",
-                    ]:  # this is a "joint position/velocity" item
-                        items = getattr(env.sim.data, c)[
-                            getattr(_t, "{}_ids".format(c))
-                        ]
-                        obs_lst.extend(items if isinstance(items, list) else [items])
-                    elif c in ["qfrc_actuator"]:  # this is a "vel position" item
-                        items = getattr(env.sim.data, c)[
-                            getattr(_t, "{}_ids".format("qvel"))
-                        ]
-                        obs_lst.extend(items if isinstance(items, list) else [items])
-                    elif c in [
-                        "cvel",
-                        "cinert",
-                        "cfrc_ext",
-                    ]:  # this is a "body position" item
-                        if _t.bodies is not None:
-                            for b in _t.bodies:
-                                if c not in body_set_dict:
-                                    body_set_dict[c] = set()
-                                if b not in body_set_dict[c]:
-                                    items = getattr(env.sim.data, c)[b].tolist()
-                                    items = getattr(_t, "body_fn", lambda _id, x: x)(
-                                        b, items
-                                    )
-                                    obs_lst.extend(
-                                        items if isinstance(items, list) else [items]
-                                    )
-                                    body_set_dict[c].add(b)
+                elif c in ["qvel","qpos"]: # this is a "joint position/velocity" item
+                    items = getattr(env.sim.data, c)[getattr(_t, "{}_ids".format(c))]
+                    # print("%s items: %s" % (c, items))
+                    obs_lst.extend(items if isinstance(items, list) else [items])
+                elif c in ["qfrc_actuator"]:  # this is a "vel position" item
+                    items = getattr(env.sim.data, c)[getattr(_t, "{}_ids".format("qvel"))]
+                    # print("qfrc_actuator items: ", items)
+                    obs_lst.extend(items if isinstance(items, list) else [items])
+                elif c in ["cvel", "cinert", "cfrc_ext"]:  # this is a "body position" item
+                    if _t.bodies is not None:
+                        for b in _t.bodies:
+                            # print("b: ", b)
+                            if c not in body_set_dict:
+                                body_set_dict[c] = set()
+                            if b not in body_set_dict[c]:
+                                items = getattr(env.sim.data, c)[b].tolist()
+                                items = getattr(_t, "body_fn", lambda _id,x:x)(b, items)
+                                # print("%s items: %s" % (c, items))
+                                # obs_lst.extend(items if isinstance(items, list) else [items])
+                                body_set_dict[c].add(b)
 
     # Add global attributes
     body_set_dict = {}
+    # print("global_categories: ", global_categories)
+    # print("global_dict: ", global_dict)
     for c in global_categories:
-        if c in ["qvel", "qpos"]:  # this is a "joint position" item
-            for j in global_dict.get("joints", []):
+        # print("global c: ", c)
+        for j in global_dict.get("joints", []):
+            if c in j.extra_obs:
+                items = j.extra_obs[c](env).tolist()
+                # print("global extra_obs %s items: %s" % (c, items))
+                if c not in ["cfrc_ext"]:
+                    obs_lst.extend(items if isinstance(items, list) else [items])
+            elif c in ["qvel", "qpos"]:  # this is a "joint position" item
                 items = getattr(env.sim.data, c)[getattr(j, "{}_ids".format(c))]
+                # print("global %s items: %s" % (c, items))
                 obs_lst.extend(items if isinstance(items, list) else [items])
-        else:
-            for b in global_dict.get("bodies", []):
-                if c not in body_set_dict:
-                    body_set_dict[c] = set()
-                if b not in body_set_dict[c]:
-                    obs_lst.extend(getattr(env.sim.data, c)[b].tolist())
-                    body_set_dict[c].add(b)
+            elif c in ["qfrc_actuator"]:  # this is a "vel position" item
+                items = getattr(env.sim.data, c)[getattr(j, "{}_ids".format("qvel"))]
+                # print("global qfrc_actuator items: ", items)
+                obs_lst.extend(items if isinstance(items, list) else [items])
+            elif c in ["cvel", "cinert", "cfrc_ext"]:  # this is a "body position" item
+                if j.bodies is not None:
+                    for b in j.bodies:
+                        # print("global b: ", b)
+                        if c not in body_set_dict:
+                            body_set_dict[c] = set()
+                        if b not in body_set_dict[c]:
+                            items = getattr(env.sim.data, c)[b].tolist()
+                            items = getattr(j, "body_fn", lambda _id,x:x)(b, items)
+                            # print("global %s items: %s" % (c, items))
+                            # obs_lst.extend(items if isinstance(items, list) else [items])
+                            body_set_dict[c].add(b)
+        for b in global_dict.get("bodies", []):
+            if c not in body_set_dict:
+                body_set_dict[c] = set()
+            if b not in body_set_dict[c]:
+                # print("global body items: ", getattr(env.sim.data, c)[b].tolist())
+                obs_lst.extend(getattr(env.sim.data, c)[b].tolist())
+                body_set_dict[c].add(b)
 
     if vec_len is not None:
-        pad = np.array((vec_len - len(obs_lst)) * [0])
+        pad = np.array((vec_len - len(obs_lst))*[0])
         if len(pad):
+            # print("len_pad: ", len(pad))
+            # print("obs_lst: ", obs_lst)
+            # print("end=========================================================")
             return np.concatenate([np.array(obs_lst), pad])
+    # print("obs_lst: ", obs_lst)
+    # print("end=========================================================")
     return np.array(obs_lst)
 
 
